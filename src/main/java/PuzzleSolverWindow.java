@@ -1,4 +1,5 @@
 import marvin.image.MarvinImage;
+import music.Mp3Player;
 import org.marvinproject.image.transform.scale.Scale;
 
 import javax.imageio.ImageIO;
@@ -17,6 +18,9 @@ public class PuzzleSolverWindow extends JPanel implements ActionListener {
     private final static String FILE_FORMAT = "png";
     private final String DIR_PATH;
     private final String FILE_PATH;
+
+    private final static String PATH_TO_SONG_FOR_WINNER = "./music/InTheNextLife_TNMK_short.mp3";
+    private static Mp3Player mp3 = new Mp3Player(PATH_TO_SONG_FOR_WINNER);
 
     private final static int STANDARD_WIDTH = 640;
     private final static int STANDARD_HEIGHT = 480;
@@ -267,6 +271,9 @@ public class PuzzleSolverWindow extends JPanel implements ActionListener {
         if(checkIfTheSameImagesOptimized(originalImage, resultImage)){
         //if(checkIfTheSameImagesFull(originalImage, resultImage)){
             JOptionPane.showMessageDialog(this, "Congratulations! You won!");
+            if(!mp3.isPlaying){
+                mp3.play();
+            }
             return true;
         }
         return false;
