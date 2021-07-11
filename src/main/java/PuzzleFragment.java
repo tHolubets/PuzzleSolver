@@ -22,14 +22,6 @@ public class PuzzleFragment {
         this.xFinish = xFinish;
         this.yFinish = yFinish;
         this.image = image;
-        rotate180();
-    }
-
-    public void rotate180() {
-        AffineTransform transform = new AffineTransform();
-        transform.rotate(Math.toRadians(180), image.getWidth()/2, image.getHeight()/2);
-        AffineTransformOp op = new AffineTransformOp(transform, AffineTransformOp.TYPE_BILINEAR);
-        image = op.filter(image, null);
     }
 
     public int getxStart() {

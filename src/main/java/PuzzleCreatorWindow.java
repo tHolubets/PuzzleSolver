@@ -6,6 +6,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -118,7 +120,11 @@ public class PuzzleCreatorWindow extends JPanel implements ActionListener {
             for (int i = 0; i < parts.length; i++) {
                 int randomNumber = MIN_NUMBER_IN_PUZZLE_NAME + (int)(Math.random() * ((MAX_NUMBER_IN_PUZZLE_NAME - MIN_NUMBER_IN_PUZZLE_NAME) + 1));
                 File outputFile = new File(FILE_PATH + randomNumber + "." + FILE_FORMAT);
-                ImageIO.write(parts[i], FILE_FORMAT, outputFile);
+                BufferedImage imageForSaving = parts[i];
+                if(randomNumber%2==0){
+                    imageForSaving = rotate180(imageForSaving);
+                }
+                ImageIO.write(imageForSaving, FILE_FORMAT, outputFile);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -171,6 +177,14 @@ public class PuzzleCreatorWindow extends JPanel implements ActionListener {
         add(folderPathLabel);
 
         divideImage.setEnabled(false);
+    }
+
+    public BufferedImage rotate180(BufferedImage imageForRotation) {
+        AffineTransform transform = new AffineTransform();
+        transform.rotate(Math.toRadians(180), imageForRotation.getWidth()/2, imageForRotation.getHeight()/2);
+        AffineTransformOp op = new AffineTransformOp(transform, AffineTransformOp.TYPE_BILINEAR);
+        BufferedImage rotatedImage = op.filter(imageForRotation, null);
+        return rotatedImage;
     }
 
     @Override
