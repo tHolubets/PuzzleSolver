@@ -55,7 +55,7 @@ public class MainMenu extends JPanel implements ActionListener {
     private void customizeWindow(JFrame window, int width, int height){
         window.setSize(width, height);
         window.setLocationRelativeTo(null);
-        window.setResizable(false);
+        //window.setResizable(false);
         window.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         window.setVisible(true);
     }

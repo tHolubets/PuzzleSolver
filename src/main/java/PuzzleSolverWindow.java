@@ -49,16 +49,20 @@ public class PuzzleSolverWindow extends JPanel implements ActionListener {
     private PuzzleFragment activePuzzleFragment;
 
     private BufferedImage image;
+    private BufferedImage originalImage;
     private PuzzleFragment[] fragments;
 
     private JButton rotatePuzzle =  new JButton("Rotate puzzle");
+    private JButton pullOutPuzzle =  new JButton("Pull out puzzle");
     private JLabel puzzleSolverLabel = new JLabel("Puzzle Solver");
 
 
     public PuzzleSolverWindow(File imageFile) {
         try {
             image = ImageIO.read(imageFile);
+            originalImage = ImageIO.read(imageFile);
             image = resizeImage(image, EXAMPLE_IMAGE_WIDTH, EXAMPLE_IMAGE_HEIGHT);
+            originalImage = resizeImage(originalImage, STANDARD_WIDTH, STANDARD_HEIGHT);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -99,6 +103,20 @@ public class PuzzleSolverWindow extends JPanel implements ActionListener {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
                 activePuzzleFragment.rotate180();
+                checkImageReadiness();
+                repaint();
+            }
+        });
+
+        pullOutPuzzle.setFocusable(false);
+        pullOutPuzzle.setBounds(730, 200, 300, 50);
+        pullOutPuzzle.setBackground(Color.GREEN);
+        add(pullOutPuzzle);
+        pullOutPuzzle.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                activePuzzleFragment.returnOldCoordinates();
+                highlightPuzzle(activePuzzleFragment);
                 repaint();
             }
         });
@@ -197,7 +215,7 @@ public class PuzzleSolverWindow extends JPanel implements ActionListener {
 
 
     private void chooseArea(int x, int y){
-        if(x > PUZZLES_X_START && y > PUZZLES_Y_START){
+        if(y > PUZZLES_Y_START){
             PuzzleFragment puzzleFragment = null;
             for (int i = 0; i < fragments.length; i++) {
                 if(fragments[i].isOnCoordinates(x, y)){
@@ -207,7 +225,18 @@ public class PuzzleSolverWindow extends JPanel implements ActionListener {
             }
             if(puzzleFragment!=null) {
                 highlightPuzzle(puzzleFragment);
+                return;
             }
+        }
+        if(x > RESULT_X_START && x < RESULT_X_START + STANDARD_WIDTH){
+            if(y > RESULT_Y_START && y < RESULT_Y_START + STANDARD_HEIGHT){
+                int newX = x - (x - RESULT_X_START) % fragmentWidth;
+                int newY = y - (y - RESULT_Y_START) % fragmentHeight;
+                checkOccupationOfPlace(newX, newY);
+                activePuzzleFragment.moveTo(newX, newY);
+                highlightPuzzle(activePuzzleFragment);
+            }
+            checkImageReadiness();
         }
     }
 
@@ -220,6 +249,62 @@ public class PuzzleSolverWindow extends JPanel implements ActionListener {
         activePuzzleFragment = puzzleFragment;
     }
 
+    private void checkOccupationOfPlace(int x, int y){
+        for (int i = 0; i < fragments.length; i++) {
+            if(fragments[i].getxStart()==x && fragments[i].getyStart()==y){
+                fragments[i].returnOldCoordinates();
+            }
+        }
+    }
+
+    private boolean checkImageReadiness(){
+        for (int i = 0; i < fragments.length; i++) {
+            if(!fragments[i].wasPlaced()){
+                return false;
+            }
+        }
+        BufferedImage resultImage = getCombinedImage();
+        if(checkIfTheSameImagesOptimized(originalImage, resultImage)){
+        //if(checkIfTheSameImagesFull(originalImage, resultImage)){
+            JOptionPane.showMessageDialog(this, "Congratulations! You won!");
+            return true;
+        }
+        return false;
+    }
+
+    public BufferedImage getCombinedImage() {
+        BufferedImage newImage = new BufferedImage(STANDARD_WIDTH, STANDARD_HEIGHT, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = newImage.createGraphics();
+        for (int i = 0; i < fragments.length; i++) {
+            g2.drawImage(fragments[i].getImage(), null, fragments[i].getxStart()-RESULT_X_START, fragments[i].getyStart()-RESULT_Y_START);
+        }
+        g2.dispose();
+        return newImage;
+    }
+
+    private boolean checkIfTheSameImagesOptimized(BufferedImage img1, BufferedImage img2){
+        int[] dataBuffIntImg1 = img1.getRGB(0, 0, STANDARD_WIDTH, STANDARD_HEIGHT, null, 0, STANDARD_WIDTH);
+        int[] dataBuffIntImg2 = img2.getRGB(0, 0, STANDARD_WIDTH, STANDARD_HEIGHT, null, 0, STANDARD_WIDTH);
+        for (int i = 0; i < dataBuffIntImg1.length; i++) {
+            if(dataBuffIntImg1[i]!=dataBuffIntImg2[i]){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean checkIfTheSameImagesFull(BufferedImage img1, BufferedImage img2){
+        int[] dataBuffIntImg1 = img1.getRGB(0, 0, STANDARD_WIDTH, STANDARD_HEIGHT, null, 0, STANDARD_WIDTH);
+        int[] dataBuffIntImg2 = img2.getRGB(0, 0, STANDARD_WIDTH, STANDARD_HEIGHT, null, 0, STANDARD_WIDTH);
+        for (int i = 0; i < dataBuffIntImg1.length; i++) {
+            Color c1 = new Color(dataBuffIntImg1[i]);
+            Color c2 = new Color(dataBuffIntImg2[i]);
+            if((c1.getRed()!=c2.getRed() || c1.getGreen()!=c2.getGreen()) || c1.getBlue()!=c2.getBlue()){
+                return false;
+            }
+        }
+        return true;
+    }
 
     @Override
     public void actionPerformed(ActionEvent e) {

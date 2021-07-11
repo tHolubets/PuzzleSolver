@@ -9,8 +9,11 @@ public class PuzzleFragment {
     private int yFinish;
     private BufferedImage image;
 
+    private int oldX;
+    private int oldY;
+
     public boolean wasPlaced() {
-        if (yFinish < 600) {
+        if (xFinish < 700) {
             return true;
         }
         return false;
@@ -22,6 +25,9 @@ public class PuzzleFragment {
         this.xFinish = xFinish;
         this.yFinish = yFinish;
         this.image = image;
+
+        oldX = xStart;
+        oldY = yStart;
     }
 
     public boolean isOnCoordinates(int x, int y){
@@ -38,6 +44,24 @@ public class PuzzleFragment {
         transform.rotate(Math.toRadians(180), image.getWidth()/2, image.getHeight()/2);
         AffineTransformOp op = new AffineTransformOp(transform, AffineTransformOp.TYPE_BILINEAR);
         image = op.filter(image, null);
+    }
+
+    public void moveTo(int newX, int newY){
+        int width = xFinish - xStart;
+        int height = yFinish - yStart;
+        xStart = newX;
+        yStart = newY;
+        xFinish = xStart + width;
+        yFinish = yStart + height;
+    }
+
+    public void returnOldCoordinates(){
+        int width = xFinish - xStart;
+        int height = yFinish - yStart;
+        xStart = oldX;
+        yStart = oldY;
+        xFinish = xStart + width;
+        yFinish = yStart + height;
     }
 
     public int getxStart() {
