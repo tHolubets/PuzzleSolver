@@ -1,3 +1,5 @@
+import windows.MainMenu;
+
 import javax.swing.*;
 
 public class Starter {
