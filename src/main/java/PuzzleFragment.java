@@ -24,6 +24,22 @@ public class PuzzleFragment {
         this.image = image;
     }
 
+    public boolean isOnCoordinates(int x, int y){
+        if(x >= xStart && x <= xFinish){
+            if(y >= yStart && y <= yFinish){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void rotate180() {
+        AffineTransform transform = new AffineTransform();
+        transform.rotate(Math.toRadians(180), image.getWidth()/2, image.getHeight()/2);
+        AffineTransformOp op = new AffineTransformOp(transform, AffineTransformOp.TYPE_BILINEAR);
+        image = op.filter(image, null);
+    }
+
     public int getxStart() {
         return xStart;
     }

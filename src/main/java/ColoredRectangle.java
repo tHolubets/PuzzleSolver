@@ -9,6 +9,11 @@ public class ColoredRectangle {
         this.color = color;
     }
 
+    public ColoredRectangle() {
+        rectangle = new Rectangle(0,0,1,1);
+        this.color = Color.WHITE;
+    }
+
     public Rectangle getRectangle() {
         return rectangle;
     }

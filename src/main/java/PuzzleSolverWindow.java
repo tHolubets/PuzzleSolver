@@ -4,8 +4,7 @@ import org.marvinproject.image.transform.scale.Scale;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -25,7 +24,7 @@ public class PuzzleSolverWindow extends JPanel implements ActionListener {
     private final static int EXAMPLE_IMAGE_WIDTH = STANDARD_WIDTH/2;
     private final static int EXAMPLE_IMAGE_HEIGHT = STANDARD_HEIGHT/2;
 
-    private final static int EXAMPLE_IMAGE_X_START = 20;
+    private final static int EXAMPLE_IMAGE_X_START = 180;
     private final static int EXAMPLE_IMAGE_X_FINISH = EXAMPLE_IMAGE_X_START + EXAMPLE_IMAGE_WIDTH;
     private final static int EXAMPLE_IMAGE_Y_START = 20;
     private final static int EXAMPLE_IMAGE_Y_FINISH = EXAMPLE_IMAGE_Y_START + EXAMPLE_IMAGE_HEIGHT;
@@ -35,25 +34,26 @@ public class PuzzleSolverWindow extends JPanel implements ActionListener {
 
     private final static int PUZZLES_MIN_SPACE = 5;
     private final static int PUZZLES_X_START = 690;
-    private final static int PUZZLES_X_FINISH = 1400;
     private final static int PUZZLES_Y_START = RESULT_Y_START - PUZZLES_MIN_SPACE * 2;
 
     private final static int DEFAULT_NUMBER_OF_SECTIONS = 16;
 
     private final static int WIDTH_FOR_FRAGMENTS = 700;
+    private int fragmentWidth = 160;
+    private int fragmentHeight = 120;
 
     private final List<Line> lines = new LinkedList<>();
     private final List<ColoredRectangle> rectangles = new LinkedList<>();
 
+    private ColoredRectangle activeAreaRectangle = new ColoredRectangle();
+    private PuzzleFragment activePuzzleFragment;
+
     private BufferedImage image;
     private PuzzleFragment[] fragments;
 
-    private JButton divideImage = new JButton("Divide the image");
-    private JLabel folderPathLabel = new JLabel("Puzzles were saved in the folder: ");
-    private JLabel sectionNChoiceLabel = new JLabel("Choose number of sections:");
-    private ButtonGroup bg = new ButtonGroup();
-    private JRadioButton sectionNChoice16RB = new JRadioButton("16 sections");
-    private JRadioButton sectionNChoice25RB = new JRadioButton("25 sections");
+    private JButton rotatePuzzle =  new JButton("Rotate puzzle");
+    private JLabel puzzleSolverLabel = new JLabel("Puzzle Solver");
+
 
     public PuzzleSolverWindow(File imageFile) {
         try {
@@ -77,17 +77,47 @@ public class PuzzleSolverWindow extends JPanel implements ActionListener {
         }
 
         initWindow(imageNamesFromFolder.length);
+
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                chooseArea(e.getX(), e.getY());
+                repaint();
+            }
+        });
     }
 
     private void initWindow(int puzzleNumber) {
         setLayout(null);
         setSize(1000, 1000);
 
+        rotatePuzzle.setFocusable(false);
+        rotatePuzzle.setBounds(1050, 200, 300, 50);
+        rotatePuzzle.setBackground(Color.GREEN);
+        add(rotatePuzzle);
+        rotatePuzzle.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                activePuzzleFragment.rotate180();
+                repaint();
+            }
+        });
+
+        puzzleSolverLabel.setBounds(600, 50, 900, 90);
+        puzzleSolverLabel.setFont(new Font ("TimesRoman", Font.BOLD | Font.ITALIC, 80));
+        add(puzzleSolverLabel);
+
         paintTemplateForSolving(puzzleNumber);
     }
 
     private void paintTemplateForSolving(int puzzleNumber){
         rectangles.add(new ColoredRectangle(RESULT_X_START, RESULT_Y_START, STANDARD_WIDTH, STANDARD_HEIGHT, Color.RED));
+        for (int i = RESULT_X_START; i <= RESULT_X_START+STANDARD_WIDTH; i+=fragmentWidth) {
+            lines.add(new Line(i, RESULT_Y_START, i, RESULT_Y_START+STANDARD_HEIGHT, Color.BLUE));
+        }
+        for (int i = RESULT_Y_START; i <= RESULT_Y_START+STANDARD_HEIGHT; i+=fragmentHeight) {
+            lines.add(new Line(RESULT_X_START, i, RESULT_X_START+STANDARD_WIDTH, i, Color.BLUE));
+        }
     }
 
     private void initializeFragments(File[] imageNamesFromFolder) throws IOException {
@@ -98,26 +128,27 @@ public class PuzzleSolverWindow extends JPanel implements ActionListener {
         fragments = new PuzzleFragment[imageNamesFromFolder.length];
 
         int numberOfFragmentsInRowOrColumn = (int) Math.sqrt(imageNamesFromFolder.length);
-        int widthOfFragment = STANDARD_WIDTH / numberOfFragmentsInRowOrColumn;
-        int heightOfFragment = STANDARD_HEIGHT / numberOfFragmentsInRowOrColumn;
+        fragmentWidth = STANDARD_WIDTH / numberOfFragmentsInRowOrColumn;
+        fragmentHeight = STANDARD_HEIGHT / numberOfFragmentsInRowOrColumn;
 
-        int numberOfColumns = calculateNumberOfColumns(imageNamesFromFolder.length, widthOfFragment);
-        int extraSpaceBeforeFragments = calculateExrtaSpace(numberOfColumns, widthOfFragment);
+        int numberOfColumns = calculateNumberOfColumns(imageNamesFromFolder.length, fragmentWidth);
+        int extraSpaceBeforeFragments = calculateExrtaSpace(numberOfColumns, fragmentWidth);
 
         for (int j = 0; j < imageNamesFromFolder.length; j += numberOfColumns) {
             for (int i = 0; i < numberOfColumns; i++) {
                 int realCounter = j+i;
                 BufferedImage image = ImageIO.read(imageNamesFromFolder[realCounter]);
-                int x1 = extraSpaceBeforeFragments + PUZZLES_X_START + widthOfFragment * i + PUZZLES_MIN_SPACE * i;
-                int y1 = PUZZLES_Y_START + heightOfFragment * (realCounter/numberOfColumns) + PUZZLES_MIN_SPACE * (realCounter/numberOfColumns);
-                int x2 = extraSpaceBeforeFragments + PUZZLES_X_START + widthOfFragment * i + PUZZLES_MIN_SPACE * i + widthOfFragment;
-                int y2 = PUZZLES_Y_START + heightOfFragment * (realCounter/numberOfColumns) + PUZZLES_MIN_SPACE * (realCounter/numberOfColumns) + heightOfFragment;
+                int x1 = extraSpaceBeforeFragments + PUZZLES_X_START + fragmentWidth * i + PUZZLES_MIN_SPACE * i;
+                int y1 = PUZZLES_Y_START + fragmentHeight * (realCounter/numberOfColumns) + PUZZLES_MIN_SPACE * (realCounter/numberOfColumns);
+                int x2 = extraSpaceBeforeFragments + PUZZLES_X_START + fragmentWidth * i + PUZZLES_MIN_SPACE * i + fragmentWidth;
+                int y2 = PUZZLES_Y_START + fragmentHeight * (realCounter/numberOfColumns) + PUZZLES_MIN_SPACE * (realCounter/numberOfColumns) + fragmentHeight;
                 PuzzleFragment puzzleFragment = new PuzzleFragment(x1, y1, x2, y2, image);
                 fragments[realCounter] = puzzleFragment;
                 System.out.println(realCounter);
                 System.out.println(puzzleFragment);
             }
         }
+        activePuzzleFragment = fragments[0];
     }
 
     private int calculateExrtaSpace(int numberOfFragmentsInRow, int widthOfFragment) {
@@ -150,20 +181,49 @@ public class PuzzleSolverWindow extends JPanel implements ActionListener {
         }
 
         for (Line line : lines) {
-            g.setColor(line.color);
-            g.drawLine(line.x1, line.y1, line.x2, line.y2);
+            g2.setColor(line.color);
+            g2.drawLine(line.x1, line.y1, line.x2, line.y2);
         }
 
         for (ColoredRectangle coloredRectangle : rectangles) {
-            g.setColor(coloredRectangle.getColor());
-            g.drawRect(coloredRectangle.getRectangle().x, coloredRectangle.getRectangle().y, coloredRectangle.getRectangle().width, coloredRectangle.getRectangle().height);
+            g2.setColor(coloredRectangle.getColor());
+            g2.drawRect(coloredRectangle.getRectangle().x, coloredRectangle.getRectangle().y, coloredRectangle.getRectangle().width, coloredRectangle.getRectangle().height);
         }
+
+        g2.setStroke(new BasicStroke(3));
+        g2.setColor(activeAreaRectangle.getColor());
+        g2.drawRect(activeAreaRectangle.getRectangle().x, activeAreaRectangle.getRectangle().y, activeAreaRectangle.getRectangle().width, activeAreaRectangle.getRectangle().height);
+    }
+
+
+    private void chooseArea(int x, int y){
+        if(x > PUZZLES_X_START && y > PUZZLES_Y_START){
+            PuzzleFragment puzzleFragment = null;
+            for (int i = 0; i < fragments.length; i++) {
+                if(fragments[i].isOnCoordinates(x, y)){
+                    puzzleFragment = fragments[i];
+                    break;
+                }
+            }
+            if(puzzleFragment!=null) {
+                highlightPuzzle(puzzleFragment);
+            }
+        }
+    }
+
+    private void highlightPuzzle(PuzzleFragment puzzleFragment){
+        int width = puzzleFragment.getxFinish() - puzzleFragment.getxStart();
+        int height = puzzleFragment.getyFinish() - puzzleFragment.getyStart();
+        ColoredRectangle highlightRectangle = new ColoredRectangle(puzzleFragment.getxStart(),
+                puzzleFragment.getyStart(), width, height, Color.GREEN);
+        activeAreaRectangle = highlightRectangle;
+        activePuzzleFragment = puzzleFragment;
     }
 
 
     @Override
     public void actionPerformed(ActionEvent e) {
-
+        System.out.println();
     }
 
     private BufferedImage resizeImage(BufferedImage originalImage, int targetWidth, int targetHeight) {
