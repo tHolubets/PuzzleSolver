@@ -32,9 +32,7 @@ public class PuzzleSolverWindow extends JPanel implements ActionListener {
     private final static int EXAMPLE_IMAGE_HEIGHT = STANDARD_HEIGHT/2;
 
     private final static int EXAMPLE_IMAGE_X_START = 180;
-    private final static int EXAMPLE_IMAGE_X_FINISH = EXAMPLE_IMAGE_X_START + EXAMPLE_IMAGE_WIDTH;
     private final static int EXAMPLE_IMAGE_Y_START = 20;
-    private final static int EXAMPLE_IMAGE_Y_FINISH = EXAMPLE_IMAGE_Y_START + EXAMPLE_IMAGE_HEIGHT;
 
     private final static int RESULT_X_START = 20;
     private final static int RESULT_Y_START = 280;
@@ -42,8 +40,6 @@ public class PuzzleSolverWindow extends JPanel implements ActionListener {
     private final static int PUZZLES_MIN_SPACE = 5;
     private final static int PUZZLES_X_START = 690;
     private final static int PUZZLES_Y_START = RESULT_Y_START - PUZZLES_MIN_SPACE * 2;
-
-    private final static int DEFAULT_NUMBER_OF_SECTIONS = 16;
 
     private final static int WIDTH_FOR_FRAGMENTS = 700;
     private int fragmentWidth = 160;
@@ -267,7 +263,6 @@ public class PuzzleSolverWindow extends JPanel implements ActionListener {
         }
         BufferedImage resultImage = getCombinedImage();
         if(checkIfTheSameImagesOptimized(originalImage, resultImage)){
-        //if(checkIfTheSameImagesFull(originalImage, resultImage)){
             JOptionPane.showMessageDialog(this, "Congratulations! You won!");
             if(!mp3.isPlaying){
                 mp3.play();
@@ -292,19 +287,6 @@ public class PuzzleSolverWindow extends JPanel implements ActionListener {
         int[] dataBuffIntImg2 = img2.getRGB(0, 0, STANDARD_WIDTH, STANDARD_HEIGHT, null, 0, STANDARD_WIDTH);
         for (int i = 0; i < dataBuffIntImg1.length; i++) {
             if(dataBuffIntImg1[i]!=dataBuffIntImg2[i]){
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private boolean checkIfTheSameImagesFull(BufferedImage img1, BufferedImage img2){
-        int[] dataBuffIntImg1 = img1.getRGB(0, 0, STANDARD_WIDTH, STANDARD_HEIGHT, null, 0, STANDARD_WIDTH);
-        int[] dataBuffIntImg2 = img2.getRGB(0, 0, STANDARD_WIDTH, STANDARD_HEIGHT, null, 0, STANDARD_WIDTH);
-        for (int i = 0; i < dataBuffIntImg1.length; i++) {
-            Color c1 = new Color(dataBuffIntImg1[i]);
-            Color c2 = new Color(dataBuffIntImg2[i]);
-            if((c1.getRed()!=c2.getRed() || c1.getGreen()!=c2.getGreen()) || c1.getBlue()!=c2.getBlue()){
                 return false;
             }
         }

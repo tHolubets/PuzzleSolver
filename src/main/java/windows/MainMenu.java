@@ -72,24 +72,25 @@ public class MainMenu extends JPanel implements ActionListener {
                 int result = chooser.showOpenDialog(null);
                 if (result == JFileChooser.APPROVE_OPTION) {
                     PuzzleAutoSolver autoSolver = new PuzzleAutoSolver(chooser.getSelectedFile());
-                    BufferedImage[] autoResultImage = autoSolver.formResultImage();
-                    File outputFile = new File("./images/fhf.png");
-                    File outputFile2 = new File("./images/fhf2.png");
+                    BufferedImage autoResultImage = autoSolver.formResultImage();
+                    File outputFile = new File("./images/autoSolvingResult.png");
                     try {
-                        ImageIO.write(autoResultImage[0], "png", outputFile);
-                        ImageIO.write(autoResultImage[1], "png", outputFile2);
+                        ImageIO.write(autoResultImage, "png", outputFile);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
+                    PuzzleAutoSolverWindow autoSolverWindow = new PuzzleAutoSolverWindow(autoResultImage);
+                    JFrame window = new JFrame("Result of Puzzle Auto Solver work");
+                    window.add(autoSolverWindow);
+                    customizeWindow(window, 700, 540);
                 }
             }
         });
     }
 
-    private void customizeWindow(JFrame window, int width, int height){
+    private void customizeWindow(JFrame window, int width, int height) {
         window.setSize(width, height);
         window.setLocationRelativeTo(null);
-        //window.setResizable(false);
         window.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         window.setVisible(true);
     }

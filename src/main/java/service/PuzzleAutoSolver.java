@@ -1,6 +1,5 @@
 package service;
 
-import objects.PuzzleFragment;
 import objects.PuzzleWithConnections;
 
 import javax.imageio.ImageIO;
@@ -8,12 +7,13 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 
 public class PuzzleAutoSolver {
     private PuzzleWithConnections[] puzzles;
-    private PuzzleWithConnections leftPuzzle;
+    private PuzzleWithConnections topLeftPuzzle;
     private PuzzleWithConnections topPuzzle;
+
+    private long maxAcceptedValue = 0;
 
 
     public PuzzleAutoSolver(File imageFile) {
@@ -42,16 +42,58 @@ public class PuzzleAutoSolver {
         }
     }
 
-    public BufferedImage[] formResultImage() {
+    public BufferedImage formResultImage() {
+        BufferedImage finalImage = formResultImage(0);
+        long bestValue = maxAcceptedValue;
+        System.out.println(maxAcceptedValue);
+        for (int i = 1; i < puzzles.length; i++) {
+            deleteAllConnections();
+            BufferedImage tempImage = formResultImage(i);
+            if(maxAcceptedValue<bestValue){
+                bestValue = maxAcceptedValue;
+                finalImage = tempImage;
+            }
+            System.out.println(maxAcceptedValue);
+        }
+        System.out.println();
+        return finalImage;
+    }
+
+    private BufferedImage formResultImage(int startIndex) {
         int rowsNumber = (int) (Math.sqrt(puzzles.length) + 0.5);
         int columnNumber = rowsNumber;
-        int widthOfPuzzle = puzzles[0].getImage().getWidth();
-        int heightOfPuzzle = puzzles[0].getImage().getHeight();
+        int widthOfPuzzle = puzzles[startIndex].getImage().getWidth();
+        int heightOfPuzzle = puzzles[startIndex].getImage().getHeight();
 
-        PuzzleWithConnections basicPuzzleTop = puzzles[0];
-        PuzzleWithConnections basicPuzzleBottom = puzzles[0];
+        long localMaxValue = formColumn(puzzles[startIndex], heightOfPuzzle, rowsNumber);
+        long localMaxValue2 = formRow(topPuzzle, widthOfPuzzle, columnNumber);
+        if (localMaxValue2 > localMaxValue) {
+            localMaxValue = localMaxValue2;
+        }
+        PuzzleWithConnections tempTopPuzzle = topLeftPuzzle;
+        for (int i = 0; i < columnNumber; i++) {
+            if (tempTopPuzzle.getBottom() != null) {
+                tempTopPuzzle = tempTopPuzzle.getRight();
+                continue;
+            }
+            localMaxValue2 = formColumnDown(tempTopPuzzle, heightOfPuzzle, rowsNumber);
+            if (localMaxValue2 > localMaxValue) {
+                localMaxValue = localMaxValue2;
+            }
+            tempTopPuzzle = tempTopPuzzle.getRight();
+        }
 
-        for (int i = 0; i < rowsNumber-1; i++) {
+        maxAcceptedValue = localMaxValue;
+
+        return getCombinedImage(widthOfPuzzle, heightOfPuzzle);
+    }
+
+    private long formColumn(PuzzleWithConnections basicPuzzle, int height, int rowsNumber) {
+        long maxValue = -1;
+        PuzzleWithConnections basicPuzzleTop = basicPuzzle;
+        PuzzleWithConnections basicPuzzleBottom = basicPuzzle;
+
+        for (int i = 0; i < rowsNumber - 1; i++) {
             int bestIndexTopBottom = -1;
             long bestResultTopBottom = Long.MAX_VALUE;
             boolean isBestRotated = false;
@@ -60,16 +102,10 @@ public class PuzzleAutoSolver {
                 if (!puzzles[j].isFree() || puzzles[j].equals(basicPuzzleTop)) {
                     continue;
                 }
-                long topValue = basicPuzzleTop.evaluateImageSimilarityTopBottom(puzzles[j].getImage(), 0, heightOfPuzzle - 1);
-                long topRotatedValue = basicPuzzleTop.evaluateImageSimilarityTopBottom(puzzles[j].getRotatedImage(), 0, heightOfPuzzle - 1);
-                long bottomValue = basicPuzzleBottom.evaluateImageSimilarityTopBottom(puzzles[j].getImage(), heightOfPuzzle - 1, 0);
-                long bottomRotatedValue = basicPuzzleBottom.evaluateImageSimilarityTopBottom(puzzles[j].getRotatedImage(), heightOfPuzzle - 1, 0);
-                System.out.println("BasicTop: " + basicPuzzleTop.getName());
-                System.out.println(puzzles[j].getName() + " (top) = " + topValue);
-                System.out.println(puzzles[j].getName() + " (topRotated) = " + topRotatedValue);
-                System.out.println("BasicBottom: " + basicPuzzleBottom.getName());
-                System.out.println(puzzles[j].getName() + " (bottom) = " + bottomValue);
-                System.out.println(puzzles[j].getName() + " (bottomRotated) = " + bottomRotatedValue);
+                long topValue = basicPuzzleTop.evaluateImageSimilarityTopBottom(puzzles[j].getImage(), 0, height - 1);
+                long topRotatedValue = basicPuzzleTop.evaluateImageSimilarityTopBottom(puzzles[j].getRotatedImage(), 0, height - 1);
+                long bottomValue = basicPuzzleBottom.evaluateImageSimilarityTopBottom(puzzles[j].getImage(), height - 1, 0);
+                long bottomRotatedValue = basicPuzzleBottom.evaluateImageSimilarityTopBottom(puzzles[j].getRotatedImage(), height - 1, 0);
                 if (topValue < bestResultTopBottom) {
                     bestResultTopBottom = topValue;
                     bestIndexTopBottom = j;
@@ -107,36 +143,71 @@ public class PuzzleAutoSolver {
                 puzzles[bestIndexTopBottom].setBottom(basicPuzzleTop);
                 basicPuzzleTop = puzzles[bestIndexTopBottom];
             }
+            if (bestResultTopBottom > maxValue) {
+                maxValue = bestResultTopBottom;
+            }
             topPuzzle = basicPuzzleTop;
         }
+        return maxValue;
+    }
 
+    private long formColumnDown(PuzzleWithConnections basicPuzzle, int height, int rowsNumber) {
+        long maxValue = -1;
+        PuzzleWithConnections basicPuzzleBottom = basicPuzzle;
 
-        /////////////////////////////////////////////////////////////////
+        for (int i = 0; i < rowsNumber - 1; i++) {
+            int bestIndex = -1;
+            long bestResult = Long.MAX_VALUE;
+            boolean isBestRotated = false;
+            for (int j = 0; j < puzzles.length; j++) {
+                if (!puzzles[j].isFree()) {
+                    continue;
+                }
+                long bottomValue = basicPuzzleBottom.evaluateImageSimilarityTopBottom(puzzles[j].getImage(), height - 1, 0);
+                long bottomRotatedValue = basicPuzzleBottom.evaluateImageSimilarityTopBottom(puzzles[j].getRotatedImage(), height - 1, 0);
+                if (bottomValue < bestResult) {
+                    bestResult = bottomValue;
+                    bestIndex = j;
+                    isBestRotated = false;
+                }
+                if (bottomRotatedValue < bestResult) {
+                    bestResult = bottomRotatedValue;
+                    bestIndex = j;
+                    isBestRotated = true;
+                }
+            }
+            if (isBestRotated) {
+                puzzles[bestIndex].rotate180();
+            }
+            basicPuzzleBottom.setBottom(puzzles[bestIndex]);
+            puzzles[bestIndex].setTop(basicPuzzleBottom);
+            basicPuzzleBottom = puzzles[bestIndex];
+            if (bestResult > maxValue) {
+                maxValue = bestResult;
+            }
+        }
+        return maxValue;
+    }
 
+    private long formRow(PuzzleWithConnections basicPuzzle, int width, int columnNumber) {
+        long maxValue = -1;
 
-        PuzzleWithConnections basicPuzzleLeft = puzzles[0];
-        PuzzleWithConnections basicPuzzleRight = puzzles[0];
+        PuzzleWithConnections basicPuzzleLeft = basicPuzzle;
+        PuzzleWithConnections basicPuzzleRight = basicPuzzle;
 
-        System.out.println("\n\n\n\nStart\n\n\n");
-        for (int i = 0; i < columnNumber-1; i++) {
+        for (int i = 0; i < columnNumber - 1; i++) {
             int bestIndexRightLeft = -1;
             long bestResultRightLeft = Long.MAX_VALUE;
             boolean isBestRotated = false;
             boolean isBestLeft = false;
             for (int j = 0; j < puzzles.length; j++) {
-                /*if (!puzzles[j].isFree()) {
+                if (!puzzles[j].isFree()) {
                     continue;
-                }*/
-                long rightValue = basicPuzzleRight.evaluateImageSimilarityRightLeft(puzzles[j].getImage(), widthOfPuzzle - 1, 0);
-                long rightRotatedValue = basicPuzzleRight.evaluateImageSimilarityRightLeft(puzzles[j].getRotatedImage(), widthOfPuzzle - 1, 0);
-                long leftValue = basicPuzzleLeft.evaluateImageSimilarityRightLeft(puzzles[j].getImage(), 0, widthOfPuzzle - 1);
-                long leftRotatedValue = basicPuzzleLeft.evaluateImageSimilarityRightLeft(puzzles[j].getRotatedImage(), 0, widthOfPuzzle - 1);
-                System.out.println("BasicRight: " + basicPuzzleRight.getName());
-                System.out.println(puzzles[j].getName() + " (right) = " + rightValue);
-                System.out.println(puzzles[j].getName() + " (rightRotated) = " + rightRotatedValue);
-                System.out.println("BasicLeft: " + basicPuzzleLeft.getName());
-                System.out.println(puzzles[j].getName() + " (left) = " + leftValue);
-                System.out.println(puzzles[j].getName() + " (leftRotated) = " + leftRotatedValue);
+                }
+                long rightValue = basicPuzzleRight.evaluateImageSimilarityRightLeft(puzzles[j].getImage(), width - 1, 0);
+                long rightRotatedValue = basicPuzzleRight.evaluateImageSimilarityRightLeft(puzzles[j].getRotatedImage(), width - 1, 0);
+                long leftValue = basicPuzzleLeft.evaluateImageSimilarityRightLeft(puzzles[j].getImage(), 0, width - 1);
+                long leftRotatedValue = basicPuzzleLeft.evaluateImageSimilarityRightLeft(puzzles[j].getRotatedImage(), 0, width - 1);
                 if (rightValue < bestResultRightLeft) {
                     bestResultRightLeft = rightValue;
                     bestIndexRightLeft = j;
@@ -174,21 +245,28 @@ public class PuzzleAutoSolver {
                 puzzles[bestIndexRightLeft].setLeft(basicPuzzleRight);
                 basicPuzzleRight = puzzles[bestIndexRightLeft];
             }
-            leftPuzzle = basicPuzzleLeft;
+            if (bestResultRightLeft > maxValue) {
+                maxValue = bestResultRightLeft;
+            }
+            topLeftPuzzle = basicPuzzleLeft;
         }
-
-        BufferedImage[] bufferedImages = new BufferedImage[2];
-        bufferedImages[0] = getCombinedImage();
-        bufferedImages[1] = getCombinedImage2();
-        return bufferedImages;
+        return maxValue;
     }
 
-    private BufferedImage getCombinedImage() {
-        BufferedImage newImage = new BufferedImage(640, 120, BufferedImage.TYPE_INT_ARGB);
+    private BufferedImage getCombinedImage(int widthOfFragment, int heightOfFragment) {
+        BufferedImage newImage = new BufferedImage(640, 480, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2 = newImage.createGraphics();
-        PuzzleWithConnections tempBasic = leftPuzzle;
-        for (int i = 0; i < 5; i++) {
-            g2.drawImage(tempBasic.getImage(), null, 160*i, 0);
+        PuzzleWithConnections tempBasic = topLeftPuzzle;
+        for (int i = 0; i < Integer.MAX_VALUE; i++) {
+            g2.drawImage(tempBasic.getImage(), null, widthOfFragment * i, 0);
+            PuzzleWithConnections tempBasic2 = tempBasic.getBottom();
+            for (int j = 1; j < Integer.MAX_VALUE; j++) {
+                if (tempBasic2 == null) {
+                    break;
+                }
+                g2.drawImage(tempBasic2.getImage(), null, widthOfFragment * i, heightOfFragment * j);
+                tempBasic2 = tempBasic2.getBottom();
+            }
             tempBasic = tempBasic.getRight();
             if (tempBasic == null) {
                 break;
@@ -198,18 +276,9 @@ public class PuzzleAutoSolver {
         return newImage;
     }
 
-    private BufferedImage getCombinedImage2() {
-        BufferedImage newImage = new BufferedImage(160, 480, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = newImage.createGraphics();
-        PuzzleWithConnections tempBasic = topPuzzle;
-        for (int i = 0; i < 5; i++) {
-            g2.drawImage(tempBasic.getImage(), null, 0, 120 * i);
-            tempBasic = tempBasic.getBottom();
-            if (tempBasic == null) {
-                break;
-            }
+    private void deleteAllConnections() {
+        for (int i = 0; i < puzzles.length; i++) {
+            puzzles[i].setConnectionsToNull();
         }
-        g2.dispose();
-        return newImage;
     }
 }

@@ -70,40 +70,20 @@ public class PuzzleFragment {
         return xStart;
     }
 
-    public void setxStart(int xStart) {
-        this.xStart = xStart;
-    }
-
     public int getyStart() {
         return yStart;
-    }
-
-    public void setyStart(int yStart) {
-        this.yStart = yStart;
     }
 
     public int getxFinish() {
         return xFinish;
     }
 
-    public void setxFinish(int xFinish) {
-        this.xFinish = xFinish;
-    }
-
     public int getyFinish() {
         return yFinish;
     }
 
-    public void setyFinish(int yFinish) {
-        this.yFinish = yFinish;
-    }
-
     public BufferedImage getImage() {
         return image;
-    }
-
-    public void setImage(BufferedImage image) {
-        this.image = image;
     }
 
     @Override
